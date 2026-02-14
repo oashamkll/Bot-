@@ -1,0 +1,77 @@
+name: Vadim Bot
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360  # 6 часов максимум для GitHub Actions
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Restore bot data
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            memory/
+            style_memory/
+            group_settings.json
+            user_groups.json
+          key: bot-data-${{ github.run_id }}
+          restore-keys: |
+            bot-data-
+
+      - name: Create directories
+        run: |
+          mkdir -p memory style_memory downloads ffmpeg_bin
+
+      - name: Run bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          python bot.py &
+          BOT_PID=$!
+          
+          # GitHub Actions убивает через 6 часов
+          # Сохраняем данные каждые 30 минут и перед выходом
+          trap 'echo "Stopping bot..."; kill $BOT_PID 2>/dev/null; exit 0' SIGTERM SIGINT
+          
+          # Ждём до таймаута (5 часов 50 минут чтобы успеть сохранить)
+          sleep 21000
+          
+          echo "Approaching timeout, stopping..."
+          kill $BOT_PID 2>/dev/null
+          sleep 5
+
+      - name: Save bot data
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            memory/
+            style_memory/
+            group_settings.json
+            user_groups.json
+          key: bot-data-${{ github.run_id }}
