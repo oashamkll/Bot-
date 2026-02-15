@@ -5,10 +5,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  actions: write
+  contents: read
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 360  # 6 часов максимум для GitHub Actions
+    timeout-minutes: 360
 
     steps:
       - name: Checkout repository
@@ -54,11 +58,9 @@ jobs:
           python bot.py &
           BOT_PID=$!
           
-          # GitHub Actions убивает через 6 часов
-          # Сохраняем данные каждые 30 минут и перед выходом
           trap 'echo "Stopping bot..."; kill $BOT_PID 2>/dev/null; exit 0' SIGTERM SIGINT
           
-          # Ждём до таймаута (5 часов 50 минут чтобы успеть сохранить)
+          # Ждём 5 часов 50 минут
           sleep 21000
           
           echo "Approaching timeout, stopping..."
