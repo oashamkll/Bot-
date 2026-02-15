@@ -4,10 +4,17 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Автоперезапуск каждые 5 часов 30 минут
+    - cron: '0 */6 * * *'
 
 permissions:
   actions: write
   contents: read
+
+concurrency:
+  group: telegram-bot
+  cancel-in-progress: true  # Автоматически отменяет предыдущий запуск
 
 jobs:
   run-bot:
@@ -42,13 +49,18 @@ jobs:
             style_memory/
             group_settings.json
             user_groups.json
-          key: bot-data-${{ github.run_id }}
+          key: bot-data-latest
           restore-keys: |
             bot-data-
 
       - name: Create directories
         run: |
           mkdir -p memory style_memory downloads ffmpeg_bin
+
+      - name: Wait for old bot to stop
+        run: |
+          echo "Waiting 30 seconds for old instance to fully stop..."
+          sleep 30
 
       - name: Run bot
         env:
@@ -58,16 +70,25 @@ jobs:
           python bot.py &
           BOT_PID=$!
           
-          trap 'echo "Stopping bot..."; kill $BOT_PID 2>/dev/null; exit 0' SIGTERM SIGINT
+          trap 'echo "Stopping bot..."; kill $BOT_PID 2>/dev/null; wait $BOT_PID 2>/dev/null; exit 0' SIGTERM SIGINT TERM
           
-          # Ждём 5 часов 50 минут
-          sleep 21000
+          # Ждём 5 часов 45 минут (345 минут), чтобы успеть сохранить данные
+          sleep 20700
           
-          echo "Approaching timeout, stopping..."
+          echo "Approaching timeout, stopping gracefully..."
           kill $BOT_PID 2>/dev/null
+          wait $BOT_PID 2>/dev/null
           sleep 5
 
       - name: Save bot data
+        if: always()
+        run: |
+          # Удаляем старый кеш с тем же ключом (если есть)
+          gh actions-cache delete bot-data-latest --repo ${{ github.repository }} --confirm || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache bot data
         if: always()
         uses: actions/cache/save@v4
         with:
@@ -76,4 +97,4 @@ jobs:
             style_memory/
             group_settings.json
             user_groups.json
-          key: bot-data-${{ github.run_id }}
+          key: bot-data-latest
