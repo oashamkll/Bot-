@@ -2,9 +2,12 @@ name: Keep Bot Alive
 
 on:
   schedule:
-    # Каждые 5 часов 30 минут
     - cron: '0 */6 * * *'
   workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
 
 jobs:
   restart-bot:
@@ -26,15 +29,20 @@ jobs:
             
             for (const run of runs.data.workflow_runs) {
               console.log(`Cancelling run ${run.id}`);
-              await github.rest.actions.cancelWorkflowRun({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: run.id
-              });
+              try {
+                await github.rest.actions.cancelWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id
+                });
+                console.log(`Successfully cancelled run ${run.id}`);
+              } catch (error) {
+                console.log(`Failed to cancel run ${run.id}: ${error.message}`);
+              }
             }
             
-            // Ждём немного
-            await new Promise(r => setTimeout(r, 10000));
+            // Ждём чтобы отмена завершилась
+            await new Promise(r => setTimeout(r, 15000));
             
             // Запускаем заново
             await github.rest.actions.createWorkflowDispatch({
@@ -44,4 +52,4 @@ jobs:
               ref: 'main'
             });
             
-            console.log('Bot workflow triggered');
+            console.log('Bot workflow triggered successfully');
