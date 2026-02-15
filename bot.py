@@ -1103,7 +1103,6 @@ def cmd_start(msg):
         uid = msg.from_user.id
         ud = get_user_data(uid)
         
-        # Проверяем разработчика
         if is_developer(msg.from_user):
             ud["is_developer"] = True
             ud["coins"] = 999999999
@@ -1124,6 +1123,7 @@ def cmd_start(msg):
         safe_send(msg.chat.id, text, markup=main_kb() if is_pm(msg) else None)
     except Exception as e:
         log.error(f"Ошибка /start: {e}")
+
 
 @bot.message_handler(commands=['help'])
 def cmd_help(msg):
@@ -1162,6 +1162,7 @@ def cmd_help(msg):
     
     safe_send(msg.chat.id, text, markup=main_kb() if is_pm(msg) else None)
 
+
 @bot.message_handler(commands=['profile'])
 def cmd_profile(msg):
     try:
@@ -1189,10 +1190,12 @@ def cmd_profile(msg):
     except Exception as e:
         log.error(f"Ошибка /profile: {e}")
 
+
 @bot.message_handler(commands=['balance', 'bal'])
 def cmd_balance(msg):
     ud = get_user_data(msg.from_user.id)
     safe_send(msg.chat.id, f"💰 {ud['coins']} монет | ⭐ {ud['level']} уровень")
+
 
 @bot.message_handler(commands=['daily'])
 def cmd_daily(msg):
@@ -1205,7 +1208,6 @@ def cmd_daily(msg):
             safe_send(msg.chat.id, "Уже получал сегодня 😏 Приходи завтра!")
             return
         
-        # Проверка серии
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         if ud.get("last_daily") == yesterday:
             ud["daily_streak"] = ud.get("daily_streak", 0) + 1
@@ -1213,7 +1215,7 @@ def cmd_daily(msg):
             ud["daily_streak"] = 1
         
         streak = ud["daily_streak"]
-        multiplier = min(streak, 7)  # Макс x7
+        multiplier = min(streak, 7)
         
         xp = XP_CONFIG["daily_bonus_xp"] * multiplier
         coins = XP_CONFIG["daily_bonus_coins"] * multiplier
@@ -1236,6 +1238,7 @@ def cmd_daily(msg):
     except Exception as e:
         log.error(f"Ошибка /daily: {e}")
 
+
 @bot.message_handler(commands=['give'])
 def cmd_give(msg):
     try:
@@ -1250,7 +1253,7 @@ def cmd_give(msg):
         
         try:
             amount = int(args[1])
-        except:
+        except ValueError:
             safe_send(msg.chat.id, "Укажи число")
             return
         
@@ -1283,6 +1286,7 @@ def cmd_give(msg):
     except Exception as e:
         log.error(f"Ошибка /give: {e}")
 
+
 @bot.message_handler(commands=['shop'])
 def cmd_shop(msg):
     ud = get_user_data(msg.from_user.id)
@@ -1291,6 +1295,7 @@ def cmd_shop(msg):
         text += f"{item['name']} — {item['price']}💰 (+{item['love']}💕)\n"
     text += "\n/gift [название] — купить"
     safe_send(msg.chat.id, text, markup=shop_kb())
+
 
 @bot.message_handler(commands=['gift'])
 def cmd_gift(msg):
@@ -1303,7 +1308,6 @@ def cmd_gift(msg):
         
         item_name = args[1].lower().strip()
         
-        # Ищем подарок
         item_id = None
         for k, v in HINATA_SHOP.items():
             if k == item_name or item_name in v['name'].lower():
@@ -1320,7 +1324,6 @@ def cmd_gift(msg):
             safe_send(msg.chat.id, error)
             return
         
-        # Получаем реакцию через AI
         response = get_gift_response(msg.from_user.id, item_id, item)
         
         ud = get_user_data(msg.from_user.id)
@@ -1332,6 +1335,7 @@ def cmd_gift(msg):
     except Exception as e:
         log.error(f"Ошибка /gift: {e}")
 
+
 @bot.message_handler(commands=['hinata'])
 def cmd_hinata(msg):
     ud = get_user_data(msg.from_user.id)
@@ -1339,7 +1343,6 @@ def cmd_hinata(msg):
     level = get_hinata_level(love)
     level_name = HINATA_LEVELS.get(level, "Незнакомка")
     
-    # Следующий уровень
     next_info = ""
     if level < 10:
         thresholds = [0, 50, 200, 500, 1500, 4000, 10000, 25000, 60000, 150000, 500000]
@@ -1357,6 +1360,7 @@ def cmd_hinata(msg):
     
     safe_send(msg.chat.id, text)
 
+
 @bot.message_handler(commands=['achievements'])
 def cmd_achievements(msg):
     ud = get_user_data(msg.from_user.id)
@@ -1367,6 +1371,7 @@ def cmd_achievements(msg):
         text += f"{status} {ach['name']} — {ach['desc']}\n"
     
     safe_send(msg.chat.id, text)
+
 
 @bot.message_handler(commands=['music', 'm'])
 def cmd_music(msg):
@@ -1384,6 +1389,7 @@ def cmd_music(msg):
         search_music(msg.chat.id, msg.from_user.id, query)
     except Exception as e:
         log.error(f"Ошибка /music: {e}")
+
 
 def search_music(cid, uid, query):
     smsg = safe_send(cid, f"🔍 Ищу «{query}»...")
@@ -1422,6 +1428,7 @@ def search_music(cid, uid, query):
     
     threading.Thread(target=do_search, daemon=True).start()
 
+
 @bot.message_handler(commands=['playlist', 'playlists', 'pl'])
 def cmd_playlist(msg):
     uid = msg.from_user.id
@@ -1439,6 +1446,7 @@ def cmd_playlist(msg):
     
     safe_send(msg.chat.id, text)
 
+
 @bot.message_handler(commands=['createpl'])
 def cmd_createpl(msg):
     args = msg.text.split(maxsplit=1)
@@ -1448,6 +1456,7 @@ def cmd_createpl(msg):
     
     ok, result = create_playlist(msg.from_user.id, args[1].strip()[:30])
     safe_send(msg.chat.id, result)
+
 
 @bot.message_handler(commands=['delpl'])
 def cmd_delpl(msg):
@@ -1461,6 +1470,7 @@ def cmd_delpl(msg):
     else:
         safe_send(msg.chat.id, "Не нашла такой плейлист")
 
+
 @bot.message_handler(commands=['addtopl'])
 def cmd_addtopl(msg):
     args = msg.text.split(maxsplit=1)
@@ -1473,6 +1483,7 @@ def cmd_addtopl(msg):
     
     safe_send(msg.chat.id, f"✅ Следующий трек → «{args[1].strip()}»")
 
+
 @bot.message_handler(commands=['quote'])
 def cmd_quote(msg):
     q = get_random_quote(msg.chat.id)
@@ -1480,6 +1491,7 @@ def cmd_quote(msg):
         safe_send(msg.chat.id, "Цитат нет\n/savequote — сохранить (ответь на сообщение)")
         return
     safe_send(msg.chat.id, f"💬 «{q['text']}»\n— {q['author']}")
+
 
 @bot.message_handler(commands=['savequote'])
 def cmd_savequote(msg):
@@ -1491,6 +1503,7 @@ def cmd_savequote(msg):
     text = msg.reply_to_message.text[:500]
     qid = add_quote(msg.chat.id, msg.from_user.id, author, text)
     safe_send(msg.chat.id, f"✅ Цитата #{qid} сохранена")
+
 
 @bot.message_handler(commands=['remind'])
 def cmd_remind(msg):
@@ -1506,6 +1519,7 @@ def cmd_remind(msg):
     
     add_reminder(msg.from_user.id, msg.chat.id, args[1], remind_time)
     safe_send(msg.chat.id, f"⏰ Напомню {remind_time.strftime('%d.%m в %H:%M')}")
+
 
 @bot.message_handler(commands=['top'])
 def cmd_top(msg):
@@ -1527,11 +1541,13 @@ def cmd_top(msg):
     
     safe_send(cid, text)
 
+
 @bot.message_handler(commands=['stats'])
 def cmd_stats(msg):
     if is_grp(msg) and not is_admin(msg.chat.id, msg.from_user.id):
         return
     safe_send(msg.chat.id, get_stats_text(msg.chat.id))
+
 
 @bot.message_handler(commands=['settings'])
 def cmd_settings(msg):
@@ -1549,6 +1565,7 @@ def cmd_settings(msg):
         save_settings()
     
     safe_send(msg.chat.id, f"⚙ Настройки\nШанс ответа: {s['response_chance']}%", markup=group_kb(msg.chat.id))
+
 
 @bot.message_handler(commands=['warn'])
 def cmd_warn(msg):
@@ -1576,6 +1593,7 @@ def cmd_warn(msg):
     
     safe_send(msg.chat.id, text)
 
+
 @bot.message_handler(commands=['unwarn', 'clearwarns'])
 def cmd_unwarn(msg):
     if not is_grp(msg) or not is_admin(msg.chat.id, msg.from_user.id):
@@ -1585,13 +1603,15 @@ def cmd_unwarn(msg):
         return
     
     clear_warns(msg.chat.id, msg.reply_to_message.from_user.id)
-    safe_send(msg.chat.id, f"✅ Варны сброшены")
+    safe_send(msg.chat.id, "✅ Варны сброшены")
+
 
 @bot.message_handler(commands=['warns'])
 def cmd_warns(msg):
     target = msg.reply_to_message.from_user if msg.reply_to_message else msg.from_user
     data = get_warns(msg.chat.id, target.id)
     safe_send(msg.chat.id, f"⚠️ {dname(target)}: {data['count']} варнов")
+
 
 @bot.message_handler(commands=['mute'])
 def cmd_mute(msg):
@@ -1611,6 +1631,7 @@ def cmd_mute(msg):
     until = mute_user(msg.chat.id, target.id, minutes)
     safe_send(msg.chat.id, f"🔇 {dname(target)} до {until.strftime('%H:%M')}")
 
+
 @bot.message_handler(commands=['unmute'])
 def cmd_unmute(msg):
     if not is_grp(msg) or not is_admin(msg.chat.id, msg.from_user.id):
@@ -1620,7 +1641,8 @@ def cmd_unmute(msg):
         return
     
     unmute_user(msg.chat.id, msg.reply_to_message.from_user.id)
-    safe_send(msg.chat.id, f"🔊 Размучен")
+    safe_send(msg.chat.id, "🔊 Размучен")
+
 
 @bot.message_handler(commands=['setwelcome'])
 def cmd_setwelcome(msg):
@@ -1637,6 +1659,7 @@ def cmd_setwelcome(msg):
     save_settings()
     safe_send(msg.chat.id, "✅")
 
+
 @bot.message_handler(commands=['clear'])
 def cmd_clear(msg):
     if is_pm(msg):
@@ -1646,92 +1669,6 @@ def cmd_clear(msg):
         clear_session(msg.chat.id, True)
         safe_send(msg.chat.id, "✨ Очищено")
 
-@bot.message_handler(commands=['dev'])
-def cmd_dev(msg):
-    if not is_developer(msg.from_user):
-        return
-    
-    args = msg.text.split(maxsplit=2)
-    if len(args) < 2:
-        text = """🛠 Dev команды:
-/dev stats — статистика
-/dev coins [сумма] — дать монеты (ответом)
-/dev xp [кол-во] — дать XP (ответом)
-/dev reset [uid] — сбросить юзера
-/dev broadcast [текст] — рассылка
-/dev save — принудительное сохранение"""
-        safe_send(msg.chat.id, text)
-        return
-    
-    cmd = args[1].lower()
-    
-    if cmd == "stats":
-        text = f"""📊 Статистика:
-👥 Пользователей: {len(user_data)}
-💬 Групп: {len(group_settings)}
-📝 Сессий: {len(chat_sessions)}
-⏰ Напоминаний: {len(reminders)}"""
-        safe_send(msg.chat.id, text)
-    
-    elif cmd == "coins" and msg.reply_to_message and len(args) > 2:
-        try:
-            amount = int(args[2])
-            add_coins(msg.reply_to_message.from_user.id, amount)
-            save_user_data_file()
-            safe_send(msg.chat.id, f"✅ +{amount}💰 → {dname(msg.reply_to_message.from_user)}")
-        except:
-            safe_send(msg.chat.id, "Ошибка")
-    
-    elif cmd == "xp" and msg.reply_to_message and len(args) > 2:
-        try:
-            amount = int(args[2])
-            add_xp(msg.reply_to_message.from_user.id, amount)
-            save_user_data_file()
-            safe_send(msg.chat.id, f"✅ +{amount}XP → {dname(msg.reply_to_message.from_user)}")
-        except:
-            safe_send(msg.chat.id, "Ошибка")
-    
-        elif cmd == "save":
-        save_user_data_file()
-        save_settings()
-        save_chat_stats()
-        safe_send(msg.chat.id, "✅ Сохранено")
-    
-    elif cmd == "reset" and len(args) > 2:
-        try:
-            target_uid = args[2]
-            with user_data_lock:
-                if target_uid in user_data:
-                    del user_data[target_uid]
-            save_user_data_file()
-            safe_send(msg.chat.id, f"✅ Пользователь {target_uid} сброшен")
-        except:
-            safe_send(msg.chat.id, "Ошибка")
-    
-    elif cmd == "broadcast" and len(args) > 2:
-        text = args[2]
-        count = 0
-        for uid in list(user_data.keys()):
-            try:
-                bot.send_message(int(uid), f"📢 Объявление:\n\n{text}")
-                count += 1
-                time.sleep(0.1)
-            except:
-                pass
-        safe_send(msg.chat.id, f"✅ Отправлено {count} пользователям")
-    
-    elif cmd == "setdev" and msg.reply_to_message:
-        target_ud = get_user_data(msg.reply_to_message.from_user.id)
-        target_ud["is_developer"] = True
-        target_ud["coins"] = 999999999
-        save_user_data_file()
-        safe_send(msg.chat.id, f"✅ {dname(msg.reply_to_message.from_user)} теперь разработчик")
-    
-    elif cmd == "unsetdev" and msg.reply_to_message:
-        target_ud = get_user_data(msg.reply_to_message.from_user.id)
-        target_ud["is_developer"] = False
-        save_user_data_file()
-        safe_send(msg.chat.id, f"✅ {dname(msg.reply_to_message.from_user)} больше не разработчик")
 
 @bot.message_handler(commands=['addadmin'])
 def cmd_addadmin(msg):
@@ -1752,6 +1689,7 @@ def cmd_addadmin(msg):
     save_settings()
     safe_send(msg.chat.id, f"✅ {dname(target)} теперь админ")
 
+
 @bot.message_handler(commands=['removeadmin'])
 def cmd_removeadmin(msg):
     if not is_grp(msg) or not is_owner(msg.chat.id, msg.from_user.id):
@@ -1764,6 +1702,7 @@ def cmd_removeadmin(msg):
     s.get("admins", {}).pop(str(msg.reply_to_message.from_user.id), None)
     save_settings()
     safe_send(msg.chat.id, "✅ Удалён из админов")
+
 
 @bot.message_handler(commands=['poll'])
 def cmd_poll(msg):
@@ -1785,6 +1724,115 @@ def cmd_poll(msg):
     except Exception as e:
         safe_send(msg.chat.id, f"Ошибка: {e}")
 
+
+@bot.message_handler(commands=['dev'])
+def cmd_dev(msg):
+    if not is_developer(msg.from_user):
+        return
+    
+    args = msg.text.split(maxsplit=2)
+    if len(args) < 2:
+        text = """🛠 Dev команды:
+/dev stats — статистика
+/dev coins [сумма] — дать монеты (ответом)
+/dev xp [кол-во] — дать XP (ответом)
+/dev reset [uid] — сбросить юзера
+/dev broadcast [текст] — рассылка
+/dev save — принудительное сохранение
+/dev setdev — сделать разработчиком (ответом)
+/dev unsetdev — убрать разработчика (ответом)"""
+        safe_send(msg.chat.id, text)
+        return
+    
+    cmd = args[1].lower()
+    
+    if cmd == "stats":
+        text = f"""📊 Статистика:
+👥 Пользователей: {len(user_data)}
+💬 Групп: {len(group_settings)}
+📝 Сессий: {len(chat_sessions)}
+⏰ Напоминаний: {len(reminders)}"""
+        safe_send(msg.chat.id, text)
+    
+    elif cmd == "save":
+        save_user_data_file()
+        save_settings()
+        save_chat_stats()
+        safe_send(msg.chat.id, "✅ Сохранено")
+    
+    elif cmd == "coins":
+        if msg.reply_to_message and len(args) > 2:
+            try:
+                amount = int(args[2])
+                add_coins(msg.reply_to_message.from_user.id, amount)
+                save_user_data_file()
+                safe_send(msg.chat.id, f"✅ +{amount}💰 → {dname(msg.reply_to_message.from_user)}")
+            except Exception as e:
+                safe_send(msg.chat.id, f"Ошибка: {e}")
+        else:
+            safe_send(msg.chat.id, "Ответь на сообщение и укажи сумму")
+    
+    elif cmd == "xp":
+        if msg.reply_to_message and len(args) > 2:
+            try:
+                amount = int(args[2])
+                add_xp(msg.reply_to_message.from_user.id, amount)
+                save_user_data_file()
+                safe_send(msg.chat.id, f"✅ +{amount}XP → {dname(msg.reply_to_message.from_user)}")
+            except Exception as e:
+                safe_send(msg.chat.id, f"Ошибка: {e}")
+        else:
+            safe_send(msg.chat.id, "Ответь на сообщение и укажи количество")
+    
+    elif cmd == "reset":
+        if len(args) > 2:
+            try:
+                target_uid = args[2]
+                with user_data_lock:
+                    if target_uid in user_data:
+                        del user_data[target_uid]
+                save_user_data_file()
+                safe_send(msg.chat.id, f"✅ Пользователь {target_uid} сброшен")
+            except Exception as e:
+                safe_send(msg.chat.id, f"Ошибка: {e}")
+        else:
+            safe_send(msg.chat.id, "Укажи UID")
+    
+    elif cmd == "broadcast":
+        if len(args) > 2:
+            broadcast_text = args[2]
+            count = 0
+            for uid in list(user_data.keys()):
+                try:
+                    bot.send_message(int(uid), f"📢 Объявление:\n\n{broadcast_text}")
+                    count += 1
+                    time.sleep(0.1)
+                except:
+                    pass
+            safe_send(msg.chat.id, f"✅ Отправлено {count} пользователям")
+        else:
+            safe_send(msg.chat.id, "Укажи текст")
+    
+    elif cmd == "setdev":
+        if msg.reply_to_message:
+            target_ud = get_user_data(msg.reply_to_message.from_user.id)
+            target_ud["is_developer"] = True
+            target_ud["coins"] = 999999999
+            save_user_data_file()
+            safe_send(msg.chat.id, f"✅ {dname(msg.reply_to_message.from_user)} теперь разработчик")
+        else:
+            safe_send(msg.chat.id, "Ответь на сообщение")
+    
+    elif cmd == "unsetdev":
+        if msg.reply_to_message:
+            target_ud = get_user_data(msg.reply_to_message.from_user.id)
+            target_ud["is_developer"] = False
+            save_user_data_file()
+            safe_send(msg.chat.id, f"✅ {dname(msg.reply_to_message.from_user)} больше не разработчик")
+        else:
+            safe_send(msg.chat.id, "Ответь на сообщение")
+
+
 # ================= CALLBACKS =================
 @bot.callback_query_handler(func=lambda c: True)
 def on_callback(call):
@@ -1794,12 +1842,10 @@ def on_callback(call):
         mid = call.message.message_id
         data = call.data
         
-        # Треки
         if data.startswith("track_"):
             handle_track_callback(call, cid, mid)
             return
         
-        # Покупка подарков
         if data.startswith("buy_"):
             item_id = data[4:]
             if item_id in HINATA_SHOP:
@@ -1817,7 +1863,6 @@ def on_callback(call):
                 bot.answer_callback_query(call.id, "💕")
             return
         
-        # Формат скачивания
         if data.startswith("fmt_"):
             with states_lock:
                 url = user_states.pop(f"dl_{cid}_{mid}", None)
@@ -1826,14 +1871,13 @@ def on_callback(call):
                 bot.answer_callback_query(call.id, "⏰ Устарело", show_alert=True)
                 return
             
-            fmt = data[4:]  # audio или video
+            fmt = data[4:]
             safe_edit("⏳ Скачиваю...", cid, mid)
             bot.answer_callback_query(call.id)
             
             threading.Thread(target=download_and_send, args=(cid, mid, url, fmt, uid), daemon=True).start()
             return
         
-        # Основные кнопки
         if data == "profile":
             ud = get_user_data(uid)
             h_level = get_hinata_level(ud.get("hinata_love", 0))
@@ -1881,7 +1925,6 @@ def on_callback(call):
             safe_edit("🖤", cid, mid, markup=main_kb())
             bot.answer_callback_query(call.id)
         
-        # Настройки группы
         elif data == "chance_down":
             if not is_admin(cid, uid):
                 bot.answer_callback_query(call.id, "❌ Нет прав", show_alert=True)
@@ -1939,6 +1982,7 @@ def on_callback(call):
         except:
             pass
 
+
 def handle_track_callback(call, cid, mid):
     try:
         parts = call.data.split("_")
@@ -1948,7 +1992,6 @@ def handle_track_callback(call, cid, mid):
         
         action = parts[-1]
         
-        # Поиск pending
         pk = None
         with pending_lock:
             for k in pending_tracks:
@@ -1968,7 +2011,7 @@ def handle_track_callback(call, cid, mid):
             
             try:
                 idx = int(action)
-            except:
+            except ValueError:
                 bot.answer_callback_query(call.id, "Ошибка")
                 return
             
@@ -1978,17 +2021,18 @@ def handle_track_callback(call, cid, mid):
                 return
             
             track = pd["results"][idx]
-            uid = pd.get("uid", call.from_user.id)
+            track_uid = pd.get("uid", call.from_user.id)
             pending_tracks.pop(pk, None)
         
         safe_edit(f"⏳ Скачиваю «{track['title'][:40]}»...", cid, mid)
         bot.answer_callback_query(call.id)
         
-        threading.Thread(target=download_and_send_track, args=(cid, mid, track, uid), daemon=True).start()
+        threading.Thread(target=download_and_send_track, args=(cid, mid, track, track_uid), daemon=True).start()
         
     except Exception as e:
         log.error(f"Track callback ошибка: {e}")
         bot.answer_callback_query(call.id, "Ошибка")
+
 
 def download_and_send_track(cid, mid, track, uid):
     try:
@@ -2008,12 +2052,10 @@ def download_and_send_track(cid, mid, track, uid):
                 )
             safe_delete(cid, mid)
             
-            # Обновляем статистику
             ud = get_user_data(uid)
             ud["tracks_downloaded"] = ud.get("tracks_downloaded", 0) + 1
             add_xp(uid, XP_CONFIG["music_download"])
             
-            # Добавление в плейлист
             with states_lock:
                 pl_name = user_states.pop(f"addpl_{uid}", None)
             
@@ -2032,6 +2074,7 @@ def download_and_send_track(cid, mid, track, uid):
     except Exception as e:
         log.error(f"Download track ошибка: {e}")
         safe_edit("😔 Ошибка скачивания", cid, mid)
+
 
 def download_and_send(cid, mid, url, fmt, uid):
     try:
@@ -2059,7 +2102,7 @@ def download_and_send(cid, mid, url, fmt, uid):
             finally:
                 shutil.rmtree(result.get('temp_dir', ''), ignore_errors=True)
         
-        else:  # video
+        else:
             result, error = download_video(url)
             if error:
                 safe_edit(f"😔 {error}", cid, mid)
@@ -2084,6 +2127,7 @@ def download_and_send(cid, mid, url, fmt, uid):
         log.error(f"Download ошибка: {e}")
         safe_edit("😔 Ошибка", cid, mid)
 
+
 # ================= СОБЫТИЯ =================
 @bot.message_handler(content_types=['new_chat_members'])
 def on_new_member(msg):
@@ -2091,7 +2135,6 @@ def on_new_member(msg):
         bi = get_bot_info()
         for member in msg.new_chat_members:
             if bi and member.id == bi.id:
-                # Бота добавили в группу
                 s = get_gs(msg.chat.id)
                 s["owner_id"] = msg.from_user.id
                 s["owner_name"] = dname(msg.from_user)
@@ -2099,7 +2142,6 @@ def on_new_member(msg):
                 save_settings()
                 safe_send(msg.chat.id, "йо 🖤 я Хината\n/help — команды")
             else:
-                # Новый участник
                 s = get_gs(msg.chat.id)
                 if s.get("welcome_enabled"):
                     text = s.get("welcome_message", "Добро пожаловать, {name}! 🖤")
@@ -2108,18 +2150,19 @@ def on_new_member(msg):
     except Exception as e:
         log.error(f"New member ошибка: {e}")
 
+
 @bot.message_handler(content_types=['left_chat_member'])
 def on_left_member(msg):
     try:
         bi = get_bot_info()
         if bi and msg.left_chat_member and msg.left_chat_member.id == bi.id:
-            # Бота удалили из группы
             cid = str(msg.chat.id)
             with settings_lock:
                 group_settings.pop(cid, None)
             save_settings()
     except Exception as e:
         log.error(f"Left member ошибка: {e}")
+
 
 @bot.message_handler(content_types=['voice', 'audio'])
 def on_voice(msg):
@@ -2132,6 +2175,7 @@ def on_voice(msg):
     except Exception as e:
         log.error(f"Voice ошибка: {e}")
 
+
 @bot.message_handler(content_types=['photo', 'video', 'document', 'sticker'])
 def on_media(msg):
     try:
@@ -2142,6 +2186,7 @@ def on_media(msg):
         save_user_data_file()
     except Exception as e:
         log.error(f"Media ошибка: {e}")
+
 
 # ================= ТЕКСТОВЫЕ СООБЩЕНИЯ =================
 @bot.message_handler(content_types=['text'])
@@ -2154,7 +2199,6 @@ def on_text(msg):
         uid = msg.from_user.id
         text = msg.text.strip()
         
-        # Проверка мута
         muted, until = is_muted(cid, uid)
         if muted and is_grp(msg):
             try:
@@ -2163,7 +2207,6 @@ def on_text(msg):
                 pass
             return
         
-        # Обновляем XP и статистику
         ud = get_user_data(uid)
         ud["messages"] = ud.get("messages", 0) + 1
         level_up = add_xp(uid, XP_CONFIG["message"])
@@ -2175,7 +2218,6 @@ def on_text(msg):
         if is_grp(msg):
             update_stats(cid, uid, text)
         
-        # Антиспам
         if is_grp(msg) and not is_admin(cid, uid):
             if check_spam(text, cid):
                 try:
@@ -2185,7 +2227,6 @@ def on_text(msg):
                     pass
                 return
         
-        # Создание плейлиста (если ожидается)
         with states_lock:
             if user_states.pop(f"pl_create_{uid}", None):
                 name = text[:30]
@@ -2193,7 +2234,6 @@ def on_text(msg):
                 safe_send(cid, result)
                 return
         
-        # Выбор трека по номеру
         if text.isdigit() and 1 <= int(text) <= 8:
             with pending_lock:
                 for pk, pv in list(pending_tracks.items()):
@@ -2212,7 +2252,6 @@ def on_text(msg):
                             return
                         break
         
-        # Проверка на ссылку для скачивания
         video_patterns = [
             r'(https?://(?:www\.)?(?:youtube\.com|youtu\.be)/\S+)',
             r'(https?://(?:www\.)?tiktok\.com/\S+)',
@@ -2237,12 +2276,10 @@ def on_text(msg):
                     user_states[f"dl_{cid}_{smsg.message_id}"] = url_found
             return
         
-        # ЛС - всегда отвечаем
         if is_pm(msg):
             process_ai_response(cid, uid, text, False)
             return
         
-        # Группа - проверяем условия ответа
         if not is_grp(msg):
             return
         
@@ -2250,7 +2287,6 @@ def on_text(msg):
         bi = get_bot_info()
         bot_username = bi.username.lower() if bi and bi.username else ""
         
-        # Проверяем, нужно ли отвечать
         is_reply_to_bot = (
             msg.reply_to_message and 
             bi and 
@@ -2261,7 +2297,6 @@ def on_text(msg):
         
         should_respond = is_reply_to_bot or is_mention or is_name_call
         
-        # Случайный ответ
         if not should_respond:
             chance = s.get("response_chance", 30)
             if random.randint(1, 100) > chance:
@@ -2273,11 +2308,11 @@ def on_text(msg):
         log.error(f"Text ошибка: {e}")
         traceback.print_exc()
 
+
 def process_ai_response(cid, uid, text, is_group, username=None):
     try:
         bot.send_chat_action(cid, 'typing')
         
-        # Формируем сообщение для истории
         if is_group and username:
             user_message = f"[{username}]: {text}"
         else:
@@ -2285,19 +2320,15 @@ def process_ai_response(cid, uid, text, is_group, username=None):
         
         add_message(cid, "user", user_message, is_group)
         
-        # Получаем историю и отправляем AI
         messages = get_messages_copy(cid, is_group)
         response = ask_ai(messages)
         
-        # Парсим действия
         clean_text, actions = parse_actions(response)
         
-        # Отправляем ответ
         if clean_text:
             add_message(cid, "assistant", clean_text, is_group)
             safe_send(cid, clean_text, markup=main_kb() if not is_group else None)
         
-        # Выполняем действия
         for action in actions:
             handle_action(cid, uid, action)
         
@@ -2306,6 +2337,7 @@ def process_ai_response(cid, uid, text, is_group, username=None):
     except Exception as e:
         log.error(f"AI response ошибка: {e}")
         safe_send(cid, "Что-то пошло не так 😔")
+
 
 def handle_action(cid, uid, action):
     try:
@@ -2328,6 +2360,7 @@ def handle_action(cid, uid, action):
     except Exception as e:
         log.error(f"Action ошибка: {e}")
 
+
 # ================= ФОНОВЫЕ ЗАДАЧИ =================
 def cleanup_loop():
     while True:
@@ -2335,7 +2368,6 @@ def cleanup_loop():
             time.sleep(CLEANUP_INTERVAL)
             now = time.time()
             
-            # Очистка downloads
             if os.path.exists(DOWNLOADS_DIR):
                 for item in os.listdir(DOWNLOADS_DIR):
                     path = os.path.join(DOWNLOADS_DIR, item)
@@ -2345,7 +2377,6 @@ def cleanup_loop():
                     except:
                         pass
             
-            # Очистка pending
             with pending_lock:
                 to_delete = []
                 for k, v in pending_tracks.items():
@@ -2354,24 +2385,25 @@ def cleanup_loop():
                 for k in to_delete:
                     pending_tracks.pop(k, None)
             
-            # Периодическое сохранение
             save_user_data_file()
             save_chat_stats()
             
-            log.info(f"Cleanup: удалено {len(to_delete)} pending, users: {len(user_data)}")
+            log.info(f"Cleanup: users={len(user_data)}, pending={len(pending_tracks)}")
             
         except Exception as e:
             log.error(f"Cleanup ошибка: {e}")
 
+
 def auto_save_loop():
     while True:
         try:
-            time.sleep(300)  # Каждые 5 минут
+            time.sleep(300)
             save_user_data_file()
             save_settings()
             save_chat_stats()
         except Exception as e:
             log.error(f"Auto-save ошибка: {e}")
+
 
 # ================= ЗАПУСК =================
 def main():
@@ -2379,7 +2411,6 @@ def main():
     print("    🖤 ХИНАТА v2.0 — ЗАПУСК 🖤")
     print("=" * 50)
     
-    # Загрузка данных
     load_settings()
     load_user_data_file()
     load_warns()
@@ -2387,7 +2418,6 @@ def main():
     load_quotes()
     load_reminders()
     
-    # Информация о боте
     bi = get_bot_info()
     if bi:
         log.info(f"Бот: @{bi.username}")
@@ -2400,14 +2430,12 @@ def main():
     log.info(f"Групп: {len(group_settings)}")
     log.info(f"yt-dlp: {'✅' if YT_DLP_AVAILABLE else '❌'}")
     
-    # Проверка разработчика
     for uid, ud in user_data.items():
         if ud.get("is_developer"):
             ud["coins"] = 999999999
             log.info(f"Разработчик: {uid}")
     save_user_data_file()
     
-    # Запуск фоновых задач
     threading.Thread(target=cleanup_loop, daemon=True).start()
     threading.Thread(target=auto_save_loop, daemon=True).start()
     threading.Thread(target=check_reminders_loop, daemon=True).start()
@@ -2416,7 +2444,6 @@ def main():
     print("    🖤 РАБОТАЕТ! 🖤")
     print("=" * 50)
     
-    # Основной цикл
     while True:
         try:
             bot.infinity_polling(
@@ -2425,7 +2452,7 @@ def main():
                 long_polling_timeout=60
             )
         except KeyboardInterrupt:
-            log.info("Остановка по Ctrl+C...")
+            log.info("Остановка...")
             save_user_data_file()
             save_settings()
             save_chat_stats()
@@ -2434,6 +2461,7 @@ def main():
             log.error(f"Polling ошибка: {e}")
             traceback.print_exc()
             time.sleep(5)
+
 
 if __name__ == "__main__":
     main()
