@@ -1,6 +1,4 @@
-# 🖤 Хината v2.0 — Полный исправленный код
 
-```python
 import telebot
 from telebot import types
 import requests
