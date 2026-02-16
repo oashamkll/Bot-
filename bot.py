@@ -3173,8 +3173,8 @@ def cmd_setowner(msg):
             s["admins"][old] = {"name": s.get("owner_name", "?")}
         s["owner_id"] = nw.id
         s["owner_name"] = dname(nw)
-    save_settings()
-    reg_group(nw.id, msg.chat.id, msg.chat.title)
+        save_settings()
+        reg_group(nw.id, msg.chat.id, msg.chat.title)
         safe_send(msg.chat.id, f"👑 {dname(nw)}")
 
 
